@@ -18,3 +18,6 @@ The .stem files should have their channels extracted to individual .wav files:
 
 In order to run this utility you might need to install ffmpeg and library sndfile.
 
+=== Testing
+
+> python -m pytest
