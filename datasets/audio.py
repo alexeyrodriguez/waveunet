@@ -14,8 +14,8 @@ def musdb18_audio(basenames):
     for name in basenames:
         mix_name = name + '_0.wav'
         vocal_name = name + '_1.wav'
-        audio_mix, msr = torchaudio.load(mix_name, channels_first=False)
-        audio_vocal, vsr = torchaudio.load(vocal_name, channels_first=False)
+        audio_mix, msr = torchaudio.load(mix_name)
+        audio_vocal, vsr = torchaudio.load(vocal_name)
         assert msr==vsr       
         yield audio_mix, audio_vocal
 
@@ -30,24 +30,24 @@ def make_snippet(audiomix, audiovocal, pos, window_sizes):
       - if input_start < 0
       - if input_end > n_samples
     """
-    n_samples = audiomix.size()[0]
+    n_samples = audiomix.size()[1]
     output_end = pos+window_sizes[1]
     overreach = int((window_sizes[0] - window_sizes[1]) / 2)
     input_start = pos-overreach
     input_end = output_end+overreach
     
     if input_start>=0 and input_end<=n_samples and output_end<=n_samples:
-        return audiomix[input_start:input_end, :], audiovocal[pos:output_end, :]
+        return audiomix[:, input_start:input_end], audiovocal[:, pos:output_end]
 
     input_prepad = 0-input_start if input_start < 0 else 0
     input_postpad = input_end-n_samples if input_end>n_samples else 0
     output_postpad = output_end-n_samples if output_end>n_samples else 0
 
-    paddedmix = F.pad(input=audiomix[input_start+input_prepad:input_end-input_postpad, :],
-                      pad=(0, 0, input_prepad, input_postpad),
+    paddedmix = F.pad(input=audiomix[:, input_start+input_prepad:input_end-input_postpad],
+                      pad=(input_prepad, input_postpad),
                       mode='constant', value=0)
-    paddedvocal = F.pad(input=audiovocal[pos:output_end-output_postpad, :],
-                        pad=(0, 0, 0, output_postpad),
+    paddedvocal = F.pad(input=audiovocal[:, pos:output_end-output_postpad],
+                        pad=(0, output_postpad),
                         mode='constant', value=0)
 
     return paddedmix, paddedvocal
@@ -76,8 +76,9 @@ class AudioSnippetsDataset(IterableDataset):
 
     def __iter__(self):
         for audio_mix, audio_vocal in self.audio_iter:
+            assert audio_mix.size()[1] >= self.window_sizes[1]
             for _ in range(0, self.num_snippets):
-                pos = random.randint(0, audio_mix.size()[0] - self.window_sizes[1])
+                pos = random.randint(0, audio_mix.size()[1] - self.window_sizes[1])
                 snippet = make_snippet(audio_mix, audio_vocal, pos, self.window_sizes)
                 yield snippet
 
