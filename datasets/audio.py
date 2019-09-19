@@ -77,8 +77,9 @@ class AudioSnippetsDataset(IterableDataset):
     def __iter__(self):
         for audio_mix, audio_vocal in self.audio_iter:
             assert audio_mix.size()[1] >= self.window_sizes[1]
-            for _ in range(0, self.num_snippets):
-                pos = random.randint(0, audio_mix.size()[1] - self.window_sizes[1])
-                snippet = make_snippet(audio_mix, audio_vocal, pos, self.window_sizes)
-                yield snippet
+            for pos in self._position_iterator(audio_mix.size()[1]):
+                yield make_snippet(audio_mix, audio_vocal, pos, self.window_sizes)
 
+    def _position_iterator(self, num_audio_samples):
+        for _ in range(0, self.num_snippets):
+            yield random.randint(0, num_audio_samples - self.window_sizes[1])
