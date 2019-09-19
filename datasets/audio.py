@@ -85,6 +85,18 @@ class AudioSnippetsDataset(IterableDataset):
             for pos in self._position_iterator(audio_mix.size()[1]):
                 yield make_snippet(audio_mix, audio_vocal, pos, self.window_sizes)
 
+    @classmethod
+    def audio_transform(cls, audio_iter, window_sizes, transform_callable):
+        """Transform audio iterators by applying a callable to ordered mix snippets.
+           This is truly an ugly function.
+        """
+        for audio_mix, audio_vocal in audio_iter:
+            num_audio_samples = audio_mix.size()[1]
+            snippet_iterator = cls([(audio_mix, audio_vocal)], window_sizes, -1, True)
+            transformed_snippets = (transform_callable(snippet_mix) for snippet_mix, _ in snippet_iterator)
+            padded_output = torch.cat(list(transformed_snippets), 1)
+            yield padded_output[:, 0:num_audio_samples]
+
     def _position_iterator(self, num_audio_samples):
         if not self.ordered:
             for _ in range(0, self.num_snippets):
