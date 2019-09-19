@@ -1,5 +1,5 @@
 import pytest
-from datasets.audio import make_snippet
+from datasets.audio import make_snippet, AudioSnippetsDataset
 import torch
 
 @pytest.fixture
@@ -49,4 +49,12 @@ class TestMakeSnippet:
         assert snipmix.equal(wanted_mix)
         assert snipvocal.equal(wanted_vocal)
 
-
+class TestAudioSnippetsDataset:
+    def test_ordered_snippets(self, mix, vocal):
+        audio_iter = [(mix, vocal)]
+        snippets_iter = AudioSnippetsDataset(audio_iter, (512, 512), num_snippets=-1, ordered=True)
+        [(mix1, vocal1), (mix2, vocal2)] = list(snippets_iter)
+        assert mix1.equal(mix[:, 0:512])
+        assert mix2.equal(mix[:, 512:1024])
+        assert vocal1.equal(vocal[:, 0:512])
+        assert vocal2.equal(vocal[:, 512:1024])

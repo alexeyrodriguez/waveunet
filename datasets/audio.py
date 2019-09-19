@@ -53,7 +53,7 @@ def make_snippet(audiomix, audiovocal, pos, window_sizes):
     return paddedmix, paddedvocal
 
 class AudioSnippetsDataset(IterableDataset):
-    """A Dataset of random snippets of audio files.
+    """A Dataset of audio file snippets .
        The snippets are randomly sampled from audio files however, the file ordering
        is preserved and hence it might influence training negatively.
     
@@ -66,13 +66,18 @@ class AudioSnippetsDataset(IterableDataset):
             if necessary. The input size is required to be larger or equal to the
             output size. Input center is aligned to output center.
         num_snippets (integer): number of snippets per file
+        ordered (boolean): Whether to extract snippets in order rather than randomly,
+            in this case the entire audio file is sampled.
     """
 
-    def __init__(self, audio_iter, window_sizes, num_snippets):
+    def __init__(self, audio_iter, window_sizes, num_snippets, ordered=False):
         self.audio_iter = audio_iter
         self.window_sizes = window_sizes
         self.num_snippets = num_snippets
+        self.ordered = ordered
         assert window_sizes[0] >= window_sizes[1]
+        if num_snippets is not -1 and ordered:
+            raise ValueError('When ordered is True, num_snippets should be set to -1.')
 
     def __iter__(self):
         for audio_mix, audio_vocal in self.audio_iter:
@@ -81,5 +86,11 @@ class AudioSnippetsDataset(IterableDataset):
                 yield make_snippet(audio_mix, audio_vocal, pos, self.window_sizes)
 
     def _position_iterator(self, num_audio_samples):
-        for _ in range(0, self.num_snippets):
-            yield random.randint(0, num_audio_samples - self.window_sizes[1])
+        if not self.ordered:
+            for _ in range(0, self.num_snippets):
+                yield random.randint(0, num_audio_samples - self.window_sizes[1])
+        else:
+            for pos in range(0, num_audio_samples, self.window_sizes[1]):
+                yield pos
+
+
