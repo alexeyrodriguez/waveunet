@@ -1,23 +1,37 @@
+import os
 import random
 import glob
 import torch
 from torch.utils.data import Dataset, IterableDataset
 import torch.nn.functional as F
 import torchaudio
+from torchaudio.compliance.kaldi import resample_waveform
 
 def musdb18_basenames(path):
     """Get the base names of wav-separated musdb18 files."""
     return [fname[:-6] for fname in glob.glob(path + '/*_0.wav')]
 
-def musdb18_audio(basenames):
+def musdb18_audio(basenames, sampling_rate=None):
     """Load mix and vocal channels from wav-separated musdb18 songs."""
     for name in basenames:
         mix_name = name + '_0.wav'
-        vocal_name = name + '_1.wav'
+        vocal_name = name + '_4.wav'
         audio_mix, msr = torchaudio.load(mix_name)
         audio_vocal, vsr = torchaudio.load(vocal_name)
-        assert msr==vsr       
+        if sampling_rate:
+            audio_mix = resample_waveform(audio_mix, msr, sampling_rate)
+            audio_vocal = resample_waveform(audio_vocal, vsr, sampling_rate)
+        else:
+            assert msr==vsr       
         yield audio_mix, audio_vocal
+
+def musdb18_transform(sampling_rate, window_sizes, transform_callable, target_path, fnames):
+    audio_iter = musdb18_audio(fnames, sampling_rate)
+    transform = lambda t: transform_callable(t.unsqueeze(0)).squeeze()
+    transformed_audio_iter = AudioSnippetsDataset.audio_transform(audio_iter, window_sizes, transform)
+    for fname, transformed_audio in zip(fnames, transformed_audio_iter):
+        target_name = '{}/{}_generated.wav'.format(target_path, os.path.basename(fname))
+        torchaudio.save(target_name, transformed_audio, sampling_rate)
 
 def make_snippet(audiomix, audiovocal, pos, window_sizes):
     """Extract a snippet from audio channels, adding padding if required.
