@@ -53,7 +53,7 @@ def main():
 
     config = cfg.load(args.config)
     window_sizes, model = models.select('naive_regressor')
-    optimizer = optim.SGD(model.parameters(), lr=0.01)
+    optimizer = optim.SGD(model.parameters(), lr=config['learning_rate'])
 
     train_names, val_names = training_fnames(config)
 
