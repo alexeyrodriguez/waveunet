@@ -42,9 +42,9 @@ def evaluate(epoch, model, val_loader):
     loss = loss / batches
     print('Epoch: {:4d}\tValidation loss: {}'.format(epoch, loss))
 
-def audio_snippets_loader(window_sizes, batch_size, file_names, sampling_rate):
-    audio_snippets = AudioSnippetsDataset(musdb18_audio(file_names, sampling_rate), window_sizes, 2)
-    return DataLoader(audio_snippets, batch_size)
+def audio_snippets_loader(config, window_sizes, file_names):
+    audio_snippets = AudioSnippetsDataset(musdb18_audio(file_names, config['sampling_rate']), window_sizes, config['snippets_per_audio_file'])
+    return DataLoader(audio_snippets, config['batch_size'])
 
 def main():
     parser = argparse.ArgumentParser(description='Source Separation Trainer')
@@ -57,13 +57,13 @@ def main():
 
     train_names, val_names = training_fnames(config)
 
-    for epoch in range(2):
-        train(optimizer, config['batches_report'], epoch, model, audio_snippets_loader(window_sizes, config['batch_size'], train_names, config['sampling_rate']))
+    for epoch in range(config['training_epochs']):
+        train(optimizer, config['batches_report'], epoch, model, audio_snippets_loader(config, window_sizes, train_names))
 
-        if epoch % 1 == 0 or True:
-            evaluate(epoch, model, audio_snippets_loader(window_sizes, config['batch_size'], val_names, config['sampling_rate']))
+        if (epoch+1) % config['validation_epochs_frequency'] == 0:
+            evaluate(epoch, model, audio_snippets_loader(config, window_sizes, val_names))
             print('Epoch: {:4d}\tApplying model to {} files.'.format(epoch, len(val_names)))
-            musdb18_transform(config['sampling_rate'], window_sizes, lambda x: x, config['generated_path'], val_names)
+            musdb18_transform(config['sampling_rate'], window_sizes, model, config['generated_path'], val_names)
 
 if __name__ == '__main__':
     main()

@@ -2,6 +2,9 @@ training_path: ../../data/musdb18_wave_subset
 generated_path: ../../data/musdb18_generated
 learning_rate: 0.01
 validation_proportion: 0.1
+validation_epochs_frequency: 2
+training_epochs: 2
 sampling_rate: 44100
 batch_size: 16
 batches_report: 4
+snippets_per_audio_file: 2
