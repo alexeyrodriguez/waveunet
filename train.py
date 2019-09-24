@@ -63,7 +63,7 @@ def main():
         if epoch % 1 == 0 or True:
             evaluate(epoch, model, audio_snippets_loader(window_sizes, config['batch_size'], val_names, config['sampling_rate']))
             print('Epoch: {:4d}\tApplying model to {} files.'.format(epoch, len(val_names)))
-            musdb18_transform(config['sampling_rate'], window_sizes, model, config['training_path'], val_names)
+            musdb18_transform(config['sampling_rate'], window_sizes, lambda x: x, config['generated_path'], val_names)
 
 if __name__ == '__main__':
     main()

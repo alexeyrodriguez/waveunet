@@ -1,4 +1,4 @@
-training_path: ../../data/musdb18_wave
+training_path: ../../data/musdb18_wave_subset
 generated_path: ../../data/musdb18_generated
 learning_rate: 0.01
 validation_proportion: 0.1
