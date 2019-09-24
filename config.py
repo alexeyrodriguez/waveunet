@@ -1,20 +1,28 @@
-
+import jsonschema
 import yaml
 
-# TODO validate
-# https://stackoverflow.com/questions/3262569/validating-a-yaml-document-in-python
-#  schema = Map({'training_path': Str(),
-#                'generated_path': Str(),
-#                'learning_rate': Float(),
-#                'validation_proportion': Float(),
-#                'sampling_rate': Int(),
-#                'batch_size': Int(),
-#                'batches_report': Int(),
-#               })
+props = [
+         ('training_path', 'string'),
+         ('generated_path', 'string'),
+         ('learning_rate', 'number'),
+         ('validation_proportion', 'number'),
+         ('validation_epochs_frequency', 'integer'),
+         ('training_epochs', 'integer'),
+         ('sampling_rate', 'integer'),
+         ('batch_size', 'integer'),
+         ('batches_report', 'integer'),
+         ('snippets_per_audio_file', 'integer'),
+        ]
+
+def config_schema():
+    prop_schm = {}
+    for p, t in props:
+        prop_schm[p] = {'type': t}
+    required = [p for p, _ in props]
+    return {'type': 'object', 'properties': prop_schm, 'required': required}
 
 def load(configpath):
     with open(configpath, 'r') as f:
-        try:
-            return yaml.safe_load(f.read())
-        except YAMLError as error:
-                print(error)
+        config_content = yaml.safe_load(f.read())
+        jsonschema.validate(instance=config_content, schema=config_schema())
+        return config_content
