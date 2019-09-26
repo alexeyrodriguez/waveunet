@@ -1,23 +1,42 @@
 
+# Wave-U-Net PyTorch reimplementation
 
+This is a PyTorch reimplementation of Wave-U-Net as described by
+[Stoller at al. / Wave-U-Net: A Multi-Scale Neural Network for End-To-End Audio Source Separations](https://arxiv.org/abs/1806.03185).
+The paper authors implementation can be found [here](https://github.com/f90/Wave-U-Net).
 
-This is a pytorch version of Wave-U-Net.
+This repository does not implement all the variants, no learned upsampling, no additive constraint between channels,
+no padding.
 
-More to follow.
+## Data Preparation
 
-=== Data Preparation
-
-Download the mudb18 dataset
+Download the [musdb18 dataset](https://sigsep.github.io/datasets/musdb.html)
 
 Install the musdb18 package. The package will install an utility `stem2wav` to extract wav files
 from the different channels of a `.stem` file.
 
-The .stem files should have their channels extracted to individual .wav files:
+The `.stem` files should have their channels extracted to individual `.wav` files:
 
->  for stemfile in musdb18/train/*; do ~/.local/bin/stem2wav "$stemfile" musdb18_wave; done
+```
+for stemfile in musdb18/train/*; do ~/.local/bin/stem2wav "$stemfile" musdb18_wave; done
+```
 
-In order to run this utility you might need to install ffmpeg and library sndfile.
+In order to run `stem2wav` you might need to install ffmpeg and library sndfile.
 
-=== Testing
+# Training
 
-> python -m pytest
+You will need to update `config.yml` to match your path setup.
+
+# TODO
+
++ GPU training
++ Save model
++ Tool to apply model to .wav files
++ Implement multiple source extraction rather than just vocal extraction
++ Preprocessing and shuffling input data for better training performance and runtime?
+
+# Unit testing
+
+```
+python -m pytest
+```
