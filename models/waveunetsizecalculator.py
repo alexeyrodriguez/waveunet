@@ -35,7 +35,7 @@ class WaveUNetSizeCalculator:
     # To be used with care as arithmetic should be carried in the integer domain
   
     def _down(self):
-        return self._down_conv().dot(self._down_decimation())
+        return self._down_decimation().dot(self._down_conv())
 
     def _up(self):
         return self._up_upsample().dot(self._up_conv())

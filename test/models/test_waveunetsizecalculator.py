@@ -29,4 +29,4 @@ class TestWaveUNetSizeCalculator:
         check_eq(wavecalc._up_conv(), i, i - k2 + 1)
 
     def test_calculation(self, wavecalc):
-        assert wavecalc.calculate_dimensions(1024) == (1168, 1021)
+        assert wavecalc.calculate_dimensions(1024) == (1266, 1021)

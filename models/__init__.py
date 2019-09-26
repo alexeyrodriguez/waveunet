@@ -1,6 +1,7 @@
 from models import naiveregressor
 from models.waveunetsizecalculator import WaveUNetSizeCalculator
 from models.resampleblock import ResampleBlock
+from models.waveunet import WaveUNet
 
 def select(model_name):
     if model_name=='naive_regressor':
