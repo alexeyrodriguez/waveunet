@@ -36,6 +36,12 @@ class ResampleBlock(nn.Module):
         self.inner_module = inner_module
 
     def forward(self, x):
+        '''
+        Applies a resampling transformation on x.
+        Convolution operations usually require padding to transform borders,
+        this module does not perform padding and instead produces an output smaller
+        than the input.
+        '''
         x, saved = self._down(x)
         x = self.inner_module(x)
         return self._up(x, saved)
