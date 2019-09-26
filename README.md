@@ -5,8 +5,8 @@ This is a PyTorch reimplementation of Wave-U-Net as described by
 [Stoller at al. / Wave-U-Net: A Multi-Scale Neural Network for End-To-End Audio Source Separations](https://arxiv.org/abs/1806.03185).
 The paper authors implementation can be found [here](https://github.com/f90/Wave-U-Net).
 
-This repository does not implement all the variants, no learned upsampling, no additive constraint between channels,
-no padding.
+This repository does not implement all the variants. The selected variant includes additional input context (no zero padding),
+upsampling through linear interpolation (no learned upsampling) and supports stereo channels and multiple source extraction.
 
 ## Data Preparation
 
