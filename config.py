@@ -12,6 +12,11 @@ props = [
          ('batch_size', 'integer'),
          ('batches_report', 'integer'),
          ('snippets_per_audio_file', 'integer'),
+         ('output_size', 'integer'),
+         ('down_kernel_size', 'integer'),
+         ('up_kernel_size', 'integer'),
+         ('depth', 'integer'),
+         ('num_filters', 'integer'),
         ]
 
 def config_schema():

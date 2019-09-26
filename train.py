@@ -52,7 +52,8 @@ def main():
     args = parser.parse_args()
 
     config = cfg.load(args.config)
-    window_sizes, model = models.select('naive_regressor')
+    window_sizes, model = models.waveunet(config['output_size'], 2, 2, config['down_kernel_size'], config['up_kernel_size'], config['depth'], config['num_filters'])
+    print(window_sizes)
     optimizer = optim.SGD(model.parameters(), lr=config['learning_rate'])
 
     train_names, val_names = training_fnames(config)

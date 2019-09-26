@@ -8,3 +8,8 @@ sampling_rate: 44100
 batch_size: 16
 batches_report: 4
 snippets_per_audio_file: 2
+output_size: 1024
+down_kernel_size: 5
+up_kernel_size: 3
+depth: 2
+num_filters: 24
