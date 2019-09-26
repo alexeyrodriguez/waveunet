@@ -15,6 +15,8 @@ class WaveUNetSizeCalculator:
         self.depth = depth
  
     def calculate_dimensions(self, requested_output):
+        # Equations between inputs and outputs are encoded as linear transformations
+        # See below
         downsample = [self._down_conv()] + [self._down()] * self.depth
         upsample = [self._up()] * self.depth + [np.eye(2)]
 
