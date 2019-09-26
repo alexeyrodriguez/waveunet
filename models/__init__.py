@@ -1,4 +1,5 @@
 from models import naiveregressor
+from models.waveunetsizecalculator import WaveUNetSizeCalculator
 
 def select(model_name):
     if model_name=='naive_regressor':
