@@ -10,6 +10,10 @@ def mix():
 def vocal():
     return torch.randn(2, 1024)
 
+@pytest.fixture
+def device():
+    return torch.device('cpu')
+
 class TestMakeSnippet:
     def test_same_window_size(self, mix, vocal):
         pos = 16
@@ -59,7 +63,7 @@ class TestAudioSnippetsDataset:
         assert vocal1.equal(vocal[:, 0:512])
         assert vocal2.equal(vocal[:, 512:1024])
 
-    def test_audio_transform(self, mix, vocal):
+    def test_audio_transform(self, device, mix, vocal):
         audio_iter = [(mix, vocal)]
-        [transformed_mix] = AudioSnippetsDataset.audio_transform(audio_iter, (100, 100), lambda t: t+1)
+        [transformed_mix] = AudioSnippetsDataset.audio_transform(audio_iter, (100, 100), device, lambda t: t+1)
         assert transformed_mix.equal(mix+1)

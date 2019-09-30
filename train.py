@@ -19,9 +19,10 @@ def training_fnames(config):
     val_names, train_names = train_names[0:sep_index], train_names[sep_index:]
     return train_names,val_names
 
-def train(optimizer, log_interval, epoch, model, train_loader):
+def train(optimizer, log_interval, epoch, device, model, train_loader):
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
+        data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
         output = model(data)
         loss = F.mse_loss(output, target)
@@ -30,12 +31,13 @@ def train(optimizer, log_interval, epoch, model, train_loader):
         if batch_idx % log_interval == 0:
             print('Epoch: {:4d}\tBatch: {}\tTraining Loss: {}\t'.format(epoch, batch_idx, loss))
 
-def evaluate(epoch, model, val_loader):
+def evaluate(epoch, device, model, val_loader):
     model.eval()
     loss = 0.0
     batches = 0
     with torch.no_grad():
         for data, target in val_loader:
+            data, target = data.to(device), target.to(device)
             output = model(data)
             loss += F.mse_loss(output, target)
             batches += 1
@@ -55,18 +57,19 @@ def main():
     window_sizes, model = models.waveunet(config['output_size'], 2, 2, config['down_kernel_size'], config['up_kernel_size'], config['depth'], config['num_filters'])
     print(window_sizes)
 
-    model = model.to(torch.device(config['device']))
+    device = torch.device(config['device'])
+    model = model.to(device)
     optimizer = optim.SGD(model.parameters(), lr=config['learning_rate'])
 
     train_names, val_names = training_fnames(config)
 
     for epoch in range(config['training_epochs']):
-        train(optimizer, config['batches_report'], epoch, model, audio_snippets_loader(config, window_sizes, train_names))
+        train(optimizer, config['batches_report'], epoch, device, model, audio_snippets_loader(config, window_sizes, train_names))
 
         if (epoch+1) % config['validation_epochs_frequency'] == 0:
-            evaluate(epoch, model, audio_snippets_loader(config, window_sizes, val_names))
+            evaluate(epoch, device, model, audio_snippets_loader(config, window_sizes, val_names))
             print('Epoch: {:4d}\tApplying model to {} files.'.format(epoch, len(val_names)))
-            musdb18_transform(config['sampling_rate'], window_sizes, model, config['generated_path'], val_names)
+            musdb18_transform(config['sampling_rate'], window_sizes, device, model, config['generated_path'], val_names)
 
 if __name__ == '__main__':
     main()
