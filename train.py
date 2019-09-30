@@ -59,7 +59,7 @@ def main():
 
     device = torch.device(config['device'])
     model = model.to(device)
-    optimizer = optim.SGD(model.parameters(), lr=config['learning_rate'])
+    optimizer = optim.Adam(model.parameters(), lr=config['learning_rate'])
 
     train_names, val_names = training_fnames(config)
 
