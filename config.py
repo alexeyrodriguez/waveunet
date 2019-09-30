@@ -17,6 +17,7 @@ props = [
          ('up_kernel_size', 'integer'),
          ('depth', 'integer'),
          ('num_filters', 'integer'),
+         ('device', 'string'), # cpu or cuda
         ]
 
 def config_schema():

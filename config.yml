@@ -13,3 +13,4 @@ down_kernel_size: 15
 up_kernel_size: 5
 depth: 4
 num_filters: 24
+device: cpu
