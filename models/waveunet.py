@@ -1,4 +1,5 @@
 from . import ResampleBlock
+import torch
 import torch.nn as nn
 
 class WaveUNet(nn.Module):
@@ -23,7 +24,8 @@ class WaveUNet(nn.Module):
             down_channels = (depth - i + 1) * num_filters
             block_stack = ResampleBlock(up_channels, down_channels, down_kernel_size, up_kernel_size, block_stack)
 
-        self.top_block = ResampleBlock(input_channels, num_filters, down_kernel_size, 1, block_stack, resample=False, output_channels=output_channels)
+        self.top_block = ResampleBlock(input_channels, num_filters, down_kernel_size, 1, block_stack,
+                resample=False, output_channels=output_channels, output_activation=torch.tanh)
 
     def forward(self, x):
         '''
