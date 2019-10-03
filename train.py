@@ -62,14 +62,19 @@ def main():
     optimizer = optim.Adam(model.parameters(), lr=config['learning_rate'])
 
     train_names, val_names = training_fnames(config)
+    if 'to_predict_path' in config.keys():
+        to_predict_names = musdb18_basenames(config['to_predict_path'])
+    else:
+        to_predict_names = val_names
 
     for epoch in range(config['training_epochs']):
         train(optimizer, config['batches_report'], epoch, device, model, audio_snippets_loader(config, window_sizes, train_names))
 
-        if (epoch+1) % config['validation_epochs_frequency'] == 0:
+        if (epoch+1)==config['training_epochs'] or (epoch+1) % config['validation_epochs_frequency'] == 0:
             evaluate(epoch, device, model, audio_snippets_loader(config, window_sizes, val_names))
-            print('Epoch: {:4d}\tApplying model to {} files.'.format(epoch, len(val_names)))
-            musdb18_transform(config['sampling_rate'], window_sizes, device, model, config['generated_path'], val_names)
+
+    print('Epoch: {:4d}\tApplying model to {} files.'.format(epoch, len(to_predict_names)))
+    musdb18_transform(config['sampling_rate'], window_sizes, device, model, config['generated_path'], to_predict_names)
 
 if __name__ == '__main__':
     main()
