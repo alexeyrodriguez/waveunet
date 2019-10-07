@@ -28,13 +28,17 @@ class ResampleBlock(nn.Module):
         output_channels (boolean): the number of channels outgoing from the up block, default None (same as input_channels)
     '''
     def __init__(self, input_channels, down_channels, down_kernel_size, up_kernel_size, inner_module,
-            resample=True, output_channels=None, output_activation=F.leaky_relu):
+            resample=True, output_channels=None, output_activation=None):
         super(ResampleBlock, self).__init__()
         self.resample = resample
         output_channels = input_channels if not output_channels else output_channels
-        self.output_activation = output_activation
+        self.output_activation = output_activation if output_activation else _leaky_relu
         self.down_conv = nn.Conv1d(input_channels, down_channels, down_kernel_size)
         self.up_conv = nn.Conv1d(down_channels+input_channels, output_channels, up_kernel_size)
+        torch.nn.init.xavier_uniform_(self.down_conv.weight)
+        torch.nn.init.zeros_(self.down_conv.bias)
+        torch.nn.init.xavier_uniform_(self.up_conv.weight)
+        torch.nn.init.zeros_(self.up_conv.bias)
         self.inner_module = inner_module
 
     def forward(self, x):
@@ -50,12 +54,15 @@ class ResampleBlock(nn.Module):
 
     def _down(self, x):
         decimated = x[:, :, ::2] if self.resample else x
-        return F.leaky_relu(self.down_conv(decimated)), x
+        return _leaky_relu(self.down_conv(decimated)), x
 
     def _up(self, x, saved):
         upsampled = F.interpolate(x, x.size()[2]*2-1, mode='linear') if self.resample else x
         enriched = torch.cat([centered_crop(saved, upsampled), upsampled], 1)
         return self.output_activation(self.up_conv(enriched))
+
+def _leaky_relu(t):
+    return F.leaky_relu(t, 0.3)
 
 def centered_crop(t, target_shape):
     s, target_s = t.size()[2], target_shape.size()[2]
