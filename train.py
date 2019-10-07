@@ -79,6 +79,7 @@ def main():
 
     out_dir, pred_dir = output_dirs(config)
     cfg.save(out_dir + '/config.yml', config)
+    print('Saving output to directory {}'.format(out_dir))
 
     device = torch.device(config['device'])
     model = model.to(device)
