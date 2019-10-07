@@ -1,0 +1,16 @@
+training_path: ../../data/musdb18_wave
+output_path: out
+learning_rate: 1.e-4
+validation_proportion: 0.1
+validation_epochs_frequency: 1
+training_epochs: 70
+sampling_rate: 22050
+batch_size: 16
+batches_report: 160
+snippets_per_audio_file: 100
+output_size: 16384
+down_kernel_size: 15
+up_kernel_size: 5
+depth: 12
+num_filters: 24
+device: cuda
