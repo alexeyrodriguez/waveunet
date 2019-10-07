@@ -5,12 +5,12 @@ validation_proportion: 0.1
 validation_epochs_frequency: 2
 training_epochs: 2
 sampling_rate: 22050
-batch_size: 16
+batch_size: 4
 batches_report: 4
-snippets_per_audio_file: 10
+snippets_per_audio_file: 2
 output_size: 16384
 down_kernel_size: 15
 up_kernel_size: 5
-depth: 4
+depth: 0
 num_filters: 24
 device: cpu
