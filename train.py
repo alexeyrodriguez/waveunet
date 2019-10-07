@@ -7,6 +7,7 @@ import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
+from torch.utils.tensorboard import SummaryWriter
 
 
 from datasets.audio import make_snippet, AudioSnippetsDataset
@@ -21,17 +22,22 @@ def training_fnames(config):
     val_names, train_names = train_names[0:sep_index], train_names[sep_index:]
     return train_names,val_names
 
-def train(optimizer, log_interval, epoch, device, model, train_loader):
+def train(report, optimizer, log_interval, epoch, device, model, train_loader):
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
         output = model(data)
         loss = F.mse_loss(output, target)
+        report.add_scalar('train_mse', loss)
+
         loss.backward()
         optimizer.step()
+
         if batch_idx % log_interval == 0:
             print('Epoch: {:4d}\tBatch: {}\tTraining Loss: {}\t'.format(epoch, batch_idx, loss))
+
+        report.advance_step()
 
 def evaluate(epoch, device, model, val_loader):
     model.eval()
@@ -56,9 +62,10 @@ def output_dirs(config):
     base_dir = config['output_path']
     out_dir = base_dir + '/' + name
     pred_dir = out_dir + '/preds'
-    for dir in [base_dir, out_dir, pred_dir]:
+    log_dir = out_dir + '/log_dir'
+    for dir in [base_dir, out_dir, pred_dir, log_dir]:
         os.makedirs(dir, exist_ok=True)
-    return out_dir, pred_dir
+    return out_dir, pred_dir, log_dir
 
 def save_checkpoint(fname, epoch, model, optimizer, eval_loss):
     torch.save({
@@ -77,9 +84,11 @@ def main():
     window_sizes, model = models.waveunet(config['output_size'], 2, 2, config['down_kernel_size'], config['up_kernel_size'], config['depth'], config['num_filters'])
     print(window_sizes)
 
-    out_dir, pred_dir = output_dirs(config)
+    out_dir, pred_dir, log_dir = output_dirs(config)
     cfg.save(out_dir + '/config.yml', config)
     print('Saving output to directory {}'.format(out_dir))
+
+    report = Report(log_dir)
 
     device = torch.device(config['device'])
     model = model.to(device)
@@ -92,14 +101,26 @@ def main():
         to_predict_names = val_names
 
     for epoch in range(config['training_epochs']):
-        train(optimizer, config['batches_report'], epoch, device, model, audio_snippets_loader(config, window_sizes, train_names))
+        train(report, optimizer, config['batches_report'], epoch, device, model, audio_snippets_loader(config, window_sizes, train_names))
 
         if (epoch+1)==config['training_epochs'] or (epoch+1) % config['validation_epochs_frequency'] == 0:
             eval_loss = evaluate(epoch, device, model, audio_snippets_loader(config, window_sizes, val_names))
+            report.add_scalar('eval_mse', eval_loss)
             save_checkpoint(out_dir+'/checkpoint.pt', epoch, model, optimizer, eval_loss)
 
     print('Epoch: {:4d}\tApplying model to {} files.'.format(epoch, len(to_predict_names)))
     musdb18_transform(config['sampling_rate'], window_sizes, device, model, pred_dir, to_predict_names)
+
+class Report():
+    def __init__(self, log_dir):
+        self.writer = SummaryWriter(log_dir)
+        self.step = 0
+
+    def advance_step(self):
+        self.step += 1
+
+    def add_scalar(self, tag, obj):
+        self.writer.add_scalar(tag, obj, self.step)
 
 if __name__ == '__main__':
     main()
