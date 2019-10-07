@@ -18,7 +18,6 @@ import config as cfg
 def training_fnames(config):
     train_names = musdb18_basenames(config['training_path'])
     sep_index = int(len(train_names) * config['validation_proportion'])
-    random.shuffle(train_names)
     val_names, train_names = train_names[0:sep_index], train_names[sep_index:]
     return train_names,val_names
 
@@ -101,6 +100,7 @@ def main():
         to_predict_names = val_names
 
     for epoch in range(config['training_epochs']):
+        random.shuffle(train_names)
         train(report, optimizer, config['batches_report'], epoch, device, model, audio_snippets_loader(config, window_sizes, train_names))
 
         if (epoch+1)==config['training_epochs'] or (epoch+1) % config['validation_epochs_frequency'] == 0:
