@@ -18,7 +18,7 @@ def musdb18_audio(basenames, sampling_rate=None):
         vocal_name = name + '_4.wav'
         audio_mix, msr = torchaudio.load(mix_name)
         audio_vocal, vsr = torchaudio.load(vocal_name)
-        if sampling_rate:
+        if sampling_rate and msr!=sampling_rate:
             audio_mix = resample_waveform(audio_mix, msr, sampling_rate)
             audio_vocal = resample_waveform(audio_vocal, vsr, sampling_rate)
         else:
