@@ -87,8 +87,6 @@ def main():
     cfg.save(out_dir + '/config.yml', config)
     print('Saving output to directory {}'.format(out_dir))
 
-    report = Report(log_dir)
-
     device = torch.device(config['device'])
     model = model.to(device)
     optimizer = optim.Adam(model.parameters(), lr=config['learning_rate'])
@@ -99,14 +97,15 @@ def main():
     else:
         to_predict_names = val_names
 
-    for epoch in range(config['training_epochs']):
-        random.shuffle(train_names)
-        train(report, optimizer, config['batches_report'], epoch, device, model, audio_snippets_loader(config, window_sizes, train_names))
+    with Report(log_dir) as report:
+        for epoch in range(config['training_epochs']):
+            random.shuffle(train_names)
+            train(report, optimizer, config['batches_report'], epoch, device, model, audio_snippets_loader(config, window_sizes, train_names))
 
-        if (epoch+1)==config['training_epochs'] or (epoch+1) % config['validation_epochs_frequency'] == 0:
-            eval_loss = evaluate(epoch, device, model, audio_snippets_loader(config, window_sizes, val_names))
-            report.add_scalar('eval_mse', eval_loss)
-            save_checkpoint(out_dir+'/checkpoint.pt', epoch, model, optimizer, eval_loss)
+            if (epoch+1)==config['training_epochs'] or (epoch+1) % config['validation_epochs_frequency'] == 0:
+                eval_loss = evaluate(epoch, device, model, audio_snippets_loader(config, window_sizes, val_names))
+                report.add_scalar('eval_mse', eval_loss)
+                save_checkpoint(out_dir+'/checkpoint.pt', epoch, model, optimizer, eval_loss)
 
     print('Epoch: {:4d}\tApplying model to {} files.'.format(epoch, len(to_predict_names)))
     musdb18_transform(config['sampling_rate'], window_sizes, device, model, pred_dir, to_predict_names)
@@ -115,6 +114,12 @@ class Report():
     def __init__(self, log_dir):
         self.writer = SummaryWriter(log_dir)
         self.step = 0
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.writer.close()
 
     def advance_step(self):
         self.step += 1
