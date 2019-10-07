@@ -3,7 +3,7 @@ import yaml
 
 props = [
          ('training_path', 'string'),
-         ('generated_path', 'string'),
+         ('output_path', 'string'),
          ('learning_rate', 'number'),
          ('validation_proportion', 'number'),
          ('validation_epochs_frequency', 'integer'),
@@ -32,3 +32,7 @@ def load(configpath):
         config_content = yaml.safe_load(f.read())
         jsonschema.validate(instance=config_content, schema=config_schema())
         return config_content
+
+def save(fname, config):
+    with open(fname, 'w') as outfile:
+        yaml.dump(config, outfile, default_flow_style=False)

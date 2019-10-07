@@ -1,5 +1,5 @@
 training_path: ../../data/musdb18_wave
-generated_path: ../../data/musdb18_generated
+output_path: out
 learning_rate: 1.e-4
 validation_proportion: 0.1
 validation_epochs_frequency: 2

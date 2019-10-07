@@ -1,5 +1,7 @@
 import argparse
 import random
+import datetime
+import os
 
 import torch
 import torch.optim as optim
@@ -43,10 +45,28 @@ def evaluate(epoch, device, model, val_loader):
             batches += 1
     loss = loss / batches
     print('Epoch: {:4d}\tValidation loss: {}'.format(epoch, loss))
+    return loss
 
 def audio_snippets_loader(config, window_sizes, file_names):
     audio_snippets = AudioSnippetsDataset(musdb18_audio(file_names, config['sampling_rate']), window_sizes, config['snippets_per_audio_file'])
     return DataLoader(audio_snippets, config['batch_size'])
+
+def output_dirs(config):
+    name = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S_%f')
+    base_dir = config['output_path']
+    out_dir = base_dir + '/' + name
+    pred_dir = out_dir + '/preds'
+    for dir in [base_dir, out_dir, pred_dir]:
+        os.makedirs(dir, exist_ok=True)
+    return out_dir, pred_dir
+
+def save_checkpoint(fname, epoch, model, optimizer, eval_loss):
+    torch.save({
+        'epoch': epoch,
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'eval_loss': eval_loss
+        }, fname)
 
 def main():
     parser = argparse.ArgumentParser(description='Source Separation Trainer')
@@ -56,6 +76,9 @@ def main():
     config = cfg.load(args.config)
     window_sizes, model = models.waveunet(config['output_size'], 2, 2, config['down_kernel_size'], config['up_kernel_size'], config['depth'], config['num_filters'])
     print(window_sizes)
+
+    out_dir, pred_dir = output_dirs(config)
+    cfg.save(out_dir + '/config.yml', config)
 
     device = torch.device(config['device'])
     model = model.to(device)
@@ -71,10 +94,11 @@ def main():
         train(optimizer, config['batches_report'], epoch, device, model, audio_snippets_loader(config, window_sizes, train_names))
 
         if (epoch+1)==config['training_epochs'] or (epoch+1) % config['validation_epochs_frequency'] == 0:
-            evaluate(epoch, device, model, audio_snippets_loader(config, window_sizes, val_names))
+            eval_loss = evaluate(epoch, device, model, audio_snippets_loader(config, window_sizes, val_names))
+            save_checkpoint(out_dir+'/checkpoint.pt', epoch, model, optimizer, eval_loss)
 
     print('Epoch: {:4d}\tApplying model to {} files.'.format(epoch, len(to_predict_names)))
-    musdb18_transform(config['sampling_rate'], window_sizes, device, model, config['generated_path'], to_predict_names)
+    musdb18_transform(config['sampling_rate'], window_sizes, device, model, pred_dir, to_predict_names)
 
 if __name__ == '__main__':
     main()
