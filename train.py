@@ -52,9 +52,9 @@ def evaluate(epoch, device, model, val_loader):
     print('Epoch: {:4d}\tValidation loss: {}'.format(epoch, loss))
     return loss
 
-def audio_snippets_loader(config, window_sizes, file_names):
+def audio_snippets_loader(round, config, window_sizes, file_names):
     audio_snippets = AudioSnippetsDataset(musdb18_audio(file_names, config['sampling_rate']), window_sizes, config['snippets_per_audio_file'])
-    return DataLoader(audio_snippets, config['batch_size'])
+    return DataLoader(audio_snippets, config['batch_size_{}'.format(round)])
 
 def output_dirs(config):
     name = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S_%f')
@@ -89,7 +89,6 @@ def main():
 
     device = torch.device(config['device'])
     model = model.to(device)
-    optimizer = optim.Adam(model.parameters(), lr=config['learning_rate'])
 
     train_names, val_names = training_fnames(config)
     if 'to_predict_path' in config.keys():
@@ -98,14 +97,16 @@ def main():
         to_predict_names = val_names
 
     with Report(log_dir) as report:
-        for epoch in range(config['training_epochs']):
-            random.shuffle(train_names)
-            train(report, optimizer, config['batches_report'], epoch, device, model, audio_snippets_loader(config, window_sizes, train_names))
+        for round in range(2):
+            optimizer = optim.Adam(model.parameters(), lr=config['learning_rate_{}'.format(round)])
+            for epoch in range(config['training_epochs']):
+                random.shuffle(train_names)
+                train(report, optimizer, config['batches_report'], epoch, device, model, audio_snippets_loader(round, config, window_sizes, train_names))
 
-            if (epoch+1)==config['training_epochs'] or (epoch+1) % config['validation_epochs_frequency'] == 0:
-                eval_loss = evaluate(epoch, device, model, audio_snippets_loader(config, window_sizes, val_names))
-                report.add_scalar('eval_mse', eval_loss)
-                save_checkpoint(out_dir+'/checkpoint.pt', epoch, model, optimizer, eval_loss)
+                if (epoch+1)==config['training_epochs'] or (epoch+1) % config['validation_epochs_frequency'] == 0:
+                    eval_loss = evaluate(epoch, device, model, audio_snippets_loader(round, config, window_sizes, val_names))
+                    report.add_scalar('eval_mse', eval_loss)
+                    save_checkpoint(out_dir+'/checkpoint.pt', epoch, model, optimizer, eval_loss)
 
     print('Epoch: {:4d}\tApplying model to {} files.'.format(epoch, len(to_predict_names)))
     musdb18_transform(config['sampling_rate'], window_sizes, device, model, pred_dir, to_predict_names)

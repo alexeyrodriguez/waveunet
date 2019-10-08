@@ -1,11 +1,13 @@
 training_path: ../../data/musdb18_wave
 output_path: out
-learning_rate: 1.e-4
+learning_rate_0: 1.e-4
+learning_rate_1: 1.e-5
 validation_proportion: 0.1
 validation_epochs_frequency: 2
 training_epochs: 2
 sampling_rate: 22050
-batch_size: 4
+batch_size_0: 4
+batch_size_1: 8
 batches_report: 4
 snippets_per_audio_file: 2
 output_size: 16384
