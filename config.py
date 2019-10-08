@@ -11,7 +11,7 @@ props = [
          ('training_epochs', 'integer'),
          ('sampling_rate', 'integer'),
          ('batch_size_0', 'integer'),
-         ('batch_size_0', 'integer'),
+         ('batch_size_1', 'integer'),
          ('batches_report', 'integer'),
          ('snippets_per_audio_file', 'integer'),
          ('output_size', 'integer'),
