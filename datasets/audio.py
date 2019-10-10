@@ -33,38 +33,58 @@ def musdb18_transform(sampling_rate, window_sizes, device, transform_callable, t
         target_name = '{}/{}_generated.wav'.format(target_path, os.path.basename(fname))
         torchaudio.save(target_name, transformed_audio, sampling_rate)
 
-def make_snippet(audiomix, audiovocal, pos, window_sizes):
-    """Extract a snippet from audio channels, adding padding if required.
+def make_input_snippet(window_sizes, pos, audio):
+    """Extract a snippet from audio input channels, adding padding if required.
 
     Preconditions:
       - input_size >= output_size
       - input_size - output_size is divisible by 2
     Performs padding if needed:
-      - if output_end > n_samples
       - if input_start < 0
       - if input_end > n_samples
     """
-    n_samples = audiomix.size()[1]
-    output_end = pos+window_sizes[1]
+    n_samples = audio.size()[1]
     overreach = int((window_sizes[0] - window_sizes[1]) / 2)
-    input_start = pos-overreach
-    input_end = output_end+overreach
+    start = pos-overreach
+    end = pos+window_sizes[1]+overreach
     
-    if input_start>=0 and input_end<=n_samples and output_end<=n_samples:
-        return audiomix[:, input_start:input_end], audiovocal[:, pos:output_end]
+    if start>=0 and end<=n_samples:
+        return audio[:, start:end]
 
-    input_prepad = 0-input_start if input_start < 0 else 0
-    input_postpad = input_end-n_samples if input_end>n_samples else 0
-    output_postpad = output_end-n_samples if output_end>n_samples else 0
+    prepad = 0-start if start < 0 else 0
+    postpad = end-n_samples if end>n_samples else 0
 
-    paddedmix = F.pad(input=audiomix[:, input_start+input_prepad:input_end-input_postpad],
-                      pad=(input_prepad, input_postpad),
-                      mode='constant', value=0)
-    paddedvocal = F.pad(input=audiovocal[:, pos:output_end-output_postpad],
-                        pad=(0, output_postpad),
+    paddedaudio = F.pad(input=audio[:, start+prepad:end-postpad],
+                        pad=(prepad, postpad),
                         mode='constant', value=0)
 
-    return paddedmix, paddedvocal
+    return paddedaudio
+
+def make_output_snippet(window_sizes, pos, audio):
+    """Extract a snippet from audio channels, adding padding if required.
+
+    Preconditions:
+      - input_size >= output_size
+    Performs padding if needed:
+      - if output_end > n_samples
+    """
+    n_samples = audio.size()[1]
+    end = pos+window_sizes[1]
+    
+    if end<=n_samples:
+        return audio[:, pos:end]
+
+    postpad = end-n_samples if end>n_samples else 0
+
+    paddedaudio = F.pad(input=audio[:, pos:end-postpad],
+                        pad=(0, postpad),
+                        mode='constant', value=0)
+
+    return paddedaudio
+
+def make_snippet(audiomix, audiovocal, pos, window_sizes):
+    return (make_input_snippet(window_sizes, pos, audiomix),
+            make_output_snippet(window_sizes, pos, audiovocal))
 
 class AudioSnippetsDataset(IterableDataset):
     """A Dataset of audio file snippets .
