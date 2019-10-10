@@ -86,6 +86,8 @@ def main():
         to_predict_names = musdb18_basenames(config['to_predict_path'])
     else:
         to_predict_names = val_names
+    # Point to mix file
+    to_predict_names = [name + '_0.wav' for name in to_predict_names]
 
     with Report(log_dir) as report:
         for round in range(2):

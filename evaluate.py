@@ -20,7 +20,7 @@ def main():
     device = torch.device(config['device'])
     model.to(device)
 
-    musdb18_transform(config['sampling_rate'], window_sizes, device, model, args.target_dir, musdb18_basenames(args.audio_files[0]))
+    musdb18_transform(config['sampling_rate'], window_sizes, device, model, args.target_dir, args.audio_files)
 
 if __name__ == '__main__':
     main()
