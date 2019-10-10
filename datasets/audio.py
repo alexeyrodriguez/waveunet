@@ -13,17 +13,18 @@ def musdb18_basenames(path):
 
 def musdb18_audio(basenames, sampling_rate=None):
     """Load mix and vocal channels from wav-separated musdb18 songs."""
-    for name in basenames:
-        mix_name = name + '_0.wav'
-        vocal_name = name + '_4.wav'
-        audio_mix, msr = torchaudio.load(mix_name)
-        audio_vocal, vsr = torchaudio.load(vocal_name)
-        if sampling_rate and msr!=sampling_rate:
-            audio_mix = resample_waveform(audio_mix, msr, sampling_rate)
-            audio_vocal = resample_waveform(audio_vocal, vsr, sampling_rate)
+    mix_names = [name + '_0.wav' for name in basenames]
+    vocal_names = [name + '_4.wav' for name in basenames]
+    return zip(audio_iter(mix_names, sampling_rate), audio_iter(vocal_names, sampling_rate))
+
+def audio_iter(fnames, sampling_rate=None):
+    """Load mix and vocal channels from wav-separated musdb18 songs."""
+    for fname in fnames:
+        audio, sr = torchaudio.load(fname)
+        if sampling_rate and sr!=sampling_rate:
+            yield resample_waveform(audio, sr, sampling_rate)
         else:
-            assert msr==vsr       
-        yield audio_mix, audio_vocal
+            yield audio
 
 def musdb18_transform(sampling_rate, window_sizes, device, transform_callable, target_path, fnames):
     audio_iter = (audio for audio, _ in musdb18_audio(fnames, sampling_rate))
