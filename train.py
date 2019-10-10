@@ -12,8 +12,8 @@ from torch.utils.tensorboard import SummaryWriter
 
 from datasets.audio import make_snippet, AudioSnippetsDataset
 from datasets.audio import AudioSnippetsDataset, musdb18_basenames, musdb18_audio, musdb18_transform
-import models
 import config as cfg
+import modelmgt
 
 def training_fnames(config):
     train_names = musdb18_basenames(config['training_path'])
@@ -66,22 +66,13 @@ def output_dirs(config):
         os.makedirs(dir, exist_ok=True)
     return out_dir, pred_dir, log_dir
 
-def save_checkpoint(fname, epoch, model, optimizer, eval_loss):
-    torch.save({
-        'epoch': epoch,
-        'model_state_dict': model.state_dict(),
-        'optimizer_state_dict': optimizer.state_dict(),
-        'eval_loss': eval_loss
-        }, fname)
-
 def main():
     parser = argparse.ArgumentParser(description='Source Separation Trainer')
     parser.add_argument('--config', help='Path to configuration file', required=True)
     args = parser.parse_args()
 
     config = cfg.load(args.config)
-    window_sizes, model = models.waveunet(config['output_size'], 2, 2, config['down_kernel_size'], config['up_kernel_size'], config['depth'], config['num_filters'])
-    print(window_sizes)
+    window_sizes, model = modelmgt.create_waveunet_model(config)
 
     out_dir, pred_dir, log_dir = output_dirs(config)
     cfg.save(out_dir + '/config.yml', config)
@@ -106,7 +97,7 @@ def main():
                 if (epoch+1)==config['training_epochs'] or (epoch+1) % config['validation_epochs_frequency'] == 0:
                     eval_loss = evaluate(epoch, device, model, audio_snippets_loader(round, config, window_sizes, val_names))
                     report.add_scalar('eval_mse', eval_loss)
-                    save_checkpoint(out_dir+'/checkpoint.pt', epoch, model, optimizer, eval_loss)
+                    modelmgt.save_checkpoint(out_dir, epoch, model, optimizer, eval_loss)
 
     print('Epoch: {:4d}\tApplying model to {} files.'.format(epoch, len(to_predict_names)))
     musdb18_transform(config['sampling_rate'], window_sizes, device, model, pred_dir, to_predict_names)
