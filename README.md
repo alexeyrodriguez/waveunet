@@ -29,9 +29,6 @@ You will need to update `config.yml` to match your path setup.
 
 # TODO
 
-+ GPU training
-+ Save model
-+ Tool to apply model to .wav files
 + Implement multiple source extraction rather than just vocal extraction
 + Preprocessing and shuffling input data for better training performance and runtime?
 
