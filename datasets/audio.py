@@ -26,11 +26,11 @@ def musdb18_audio(basenames, sampling_rate=None):
         yield audio_mix, audio_vocal
 
 def musdb18_transform(sampling_rate, window_sizes, device, transform_callable, target_path, fnames):
-    audio_iter = musdb18_audio(fnames, sampling_rate)
+    audio_iter = (audio for audio, _ in musdb18_audio(fnames, sampling_rate))
     transform = lambda t: transform_callable(t.unsqueeze(0)).squeeze()
-    transformed_audio_iter = AudioSnippetsDataset.audio_transform(audio_iter, window_sizes, device, transform)
+    transformed_audio_iter = audio_transform(audio_iter, window_sizes, device, transform)
     for fname, transformed_audio in zip(fnames, transformed_audio_iter):
-        target_name = '{}/{}_generated.wav'.format(target_path, os.path.basename(fname))
+        target_name = '{}/{}_vocals.wav'.format(target_path, os.path.basename(fname))
         torchaudio.save(target_name, transformed_audio, sampling_rate)
 
 def make_audio_snippet(audio, start, end):
@@ -58,9 +58,12 @@ def make_snippet(audiomix, audiovocal, pos, window_sizes):
       - if input_end > n_samples
       - if output_end > n_samples
     """
-    input_overreach = (window_sizes[0] - window_sizes[1]) // 2
-    return (make_audio_snippet(audiomix, pos-input_overreach, pos+window_sizes[1]+input_overreach),
+    return (make_input_snippet(audiomix, pos, window_sizes),
             make_audio_snippet(audiovocal, pos, pos+window_sizes[1]))
+
+def make_input_snippet(audiomix, pos, window_sizes):
+    input_overreach = (window_sizes[0] - window_sizes[1]) // 2
+    return make_audio_snippet(audiomix, pos-input_overreach, pos+window_sizes[1]+input_overreach)
 
 class AudioSnippetsDataset(IterableDataset):
     """A Dataset of audio file snippets .
@@ -95,19 +98,6 @@ class AudioSnippetsDataset(IterableDataset):
             for pos in self._position_iterator(audio_mix.size()[1]):
                 yield make_snippet(audio_mix, audio_vocal, pos, self.window_sizes)
 
-    @classmethod
-    def audio_transform(cls, audio_iter, window_sizes, device, transform_callable):
-        """Transform audio iterators by applying a callable to ordered mix snippets.
-           This is truly an ugly function.
-        """
-        for audio_mix, audio_vocal in audio_iter:
-            num_audio_samples = audio_mix.size()[1]
-            snippet_iterator = cls([(audio_mix, audio_vocal)], window_sizes, -1, True)
-            transformed_snippets = (transform_callable(snippet_mix.to(device)) for snippet_mix, _ in snippet_iterator)
-            transformed_snippets = (s.cpu().detach() for s in transformed_snippets)
-            padded_output = torch.cat(list(transformed_snippets), 1)
-            yield padded_output[:, 0:num_audio_samples]
-
     def _position_iterator(self, num_audio_samples):
         if not self.ordered:
             for _ in range(0, self.num_snippets):
@@ -116,4 +106,15 @@ class AudioSnippetsDataset(IterableDataset):
             for pos in range(0, num_audio_samples, self.window_sizes[1]):
                 yield pos
 
+def audio_transform(audio_iter, window_sizes, device, transform_callable):
+    """
+    Transform audio iterators by applying a callable to ordered mix snippets.
+    """
+    for audio_mix in audio_iter:
+        snippets = []
+        for pos in range(0, audio_mix.size()[1], window_sizes[1]):
+            snippet = make_input_snippet(audio_mix, pos, window_sizes)
+            snippet = transform_callable(snippet.to(device))
+            snippets.append(snippet.cpu().detach())
 
+        yield torch.cat(snippets, 1)[:, 0:audio_mix.size()[1]]

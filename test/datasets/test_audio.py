@@ -1,5 +1,5 @@
 import pytest
-from datasets.audio import make_snippet, AudioSnippetsDataset
+from datasets.audio import make_snippet, AudioSnippetsDataset, audio_transform
 import torch
 
 @pytest.fixture
@@ -64,6 +64,6 @@ class TestAudioSnippetsDataset:
         assert vocal2.equal(vocal[:, 512:1024])
 
     def test_audio_transform(self, device, mix, vocal):
-        audio_iter = [(mix, vocal)]
-        [transformed_mix] = AudioSnippetsDataset.audio_transform(audio_iter, (100, 100), device, lambda t: t+1)
+        audio_iter = [mix]
+        [transformed_mix] = audio_transform(audio_iter, (100, 100), device, lambda t: t+1)
         assert transformed_mix.equal(mix+1)
